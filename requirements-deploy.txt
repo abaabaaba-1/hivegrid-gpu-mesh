@@ -1,0 +1,2 @@
+# Optional dependency used only by the SSH deployment helpers.
+paramiko>=3.4,<4
