@@ -1,0 +1,115 @@
+P0: BabelMesh 多 GPU Worker + Coordinator
+P1: 可演示节点：简版需求文档
+P3: 一句话定义：Coordinator 是控制面，多个 GPU Worker 是执行面，Demo Client 用来提交任务和展示结果。
+P4: 本阶段只证明单机多卡上的控制面与执行面能够稳定协作，不把它直接当成公网手机 Mesh、跨公网高速通信或生产级 GPU 租赁平台。
+P5: 1. 目标与范围
+P6: 目标是做出一个可以现场启动、观察和故障注入的最小节点。启动后，coordinator 能发现 N 张 GPU 对应的 N 个 worker；客户端提交任务后，coordinator 选择可用 worker；worker 返回结果和指标；停止一个 worker 后，系统能摘除节点并按策略重试未完成任务。
+P8: 2. 系统组成
+P10: 图 1  单机多 GPU Worker + Coordinator 拓扑
+P12: 3. 核心功能需求
+P13: 3.1 Coordinator
+P15: 3.2 GPU Worker
+P17: 3.3 Demo Client
+P18: 查看节点：显示 GPU、模型、状态、队列长度和最后心跳。
+P19: 提交任务：打印 task_id、分配节点和初始状态。
+P20: 查询结果：打印输出、执行节点、耗时和错误信息。
+P21: 故障演示：停止指定 worker，观察摘除、重试和恢复。
+P22: 4. 接口与数据
+P24: 核心对象：Node（节点能力与健康状态）、Task（任务状态与分配结果）、Result（输出与用量）、Model（模型目录）。
+P25: {
+  "idempotency_key": "demo-001",
+  "model": "demo-model",
+  "input": {"prompt": "Explain distributed inference"},
+  "deadline_ms": 120000
+}
+P26: 5. 演示流程与验收
+P27: 启动 coordinator，确认 /healthz 正常。
+P28: 按 GPU 数量启动 worker-0 至 worker-N；每个 worker 只绑定一张 GPU。
+P29: 打开节点列表，确认所有 worker 为 ready，模型和显存信息齐全。
+P30: 提交一批任务，观察不同任务被分发到不同 worker，并取得结果。
+P31: 停止一个 worker，观察心跳超时、节点摘除和未完成任务重试。
+P32: 查看指标，输出成功率、p50/p95 延迟、吞吐、队列长度和失败原因。
+P34: 6. 实施顺序与交付物
+P36: babelmesh_demo/
+├── coordinator/   # 注册、路由、队列、状态机
+├── worker/        # GPU 检测、模型加载、推理
+├── client/        # 提交、查询、故障演示
+├── protocol/      # API schema 和错误码
+├── scripts/       # start、stop、reset、demo
+└── tests/         # 单元、集成、故障、性能
+P37: 7. 关键决策
+P38: 第一阶段采用任务级并行：每张 GPU 一个完整模型副本，先验证控制面和路由。
+P39: 模型流水线和 activation tensor 转发作为后续实验，不作为本版默认验收项。
+P40: Coordinator 第一阶段允许单点；保留状态存储和接口，后续再做高可用。
+P41: 单机低延迟结果只用于功能和同机性能验证，不能代表公网 Mesh 性能。
+P42: 必须在 M0 固化实际代码来源、版本和授权范围，避免把公开概念描述误当成可直接复现的协议。
+P43: 参考
+P44: BabelMesh 公开仓库：https://github.com/swordenkisk/babel_mesh
+P45: NVIDIA NCCL Overview：https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/overview.html
+P46: vLLM Parallelism and Scaling：https://docs.vllm.ai/en/stable/serving/parallelism_scaling/
+P47: 注：参考页面用于确定范围和术语；具体实现以前述 M0 的代码、版本、授权和硬件核验结果为准。
+
+TABLES 8
+--TABLE 0 rows=5 cols=2
+项目项 | 要求
+目标 | 在一台多 GPU 主机上模拟多个 BabelMesh 节点，完成“注册—调度—推理—结果—故障恢复”闭环
+目标硬件 | 一台多 GPU NVIDIA 主机（示例：6000D）
+版本 | V0.1 可演示原型
+默认并行方式 | 每张 GPU 一个 worker，每个 worker 运行完整模型副本，按任务分发
+--TABLE 1 rows=6 cols=2
+本阶段必须有 | 本阶段先不做
+Coordinator、GPU Worker、Demo Client | 真实 Wi-Fi Direct、Bluetooth LE、Android/iOS
+注册、心跳、能力目录、任务队列、路由 | 公网 NAT 穿透、真实 gossip 网络
+推理任务、超时、重试、幂等、指标 | 积分/计费、完整 ZK/TEE、生产 SLA
+单机多卡任务级并行 | 跨公网 tensor parallel、任意模型训练
+可重复启动、停止、清理和演示 | 复杂图形化管理后台
+--TABLE 2 rows=5 cols=3
+组件 | 职责 | 硬约束
+Coordinator | 注册节点、保存能力目录、接收任务、选择 worker、管理状态、汇总指标 | 独立进程；默认 8000 端口；不执行模型推理
+GPU Worker | 绑定一张 GPU，加载模型，执行推理，发送心跳和执行指标 | 每卡一个进程；独立端口、节点 ID、日志目录；只能看到目标 GPU
+Demo Client | 查看节点、提交任务、查询结果、触发故障演示 | 命令行或轻量 HTTP 客户端；不承担调度
+模型目录 | 登记模型名称、版本、后端和显存要求 | 第一阶段可用 YAML/JSON 静态文件
+--TABLE 3 rows=9 cols=3
+编号 | 需求 | 验收
+C-01 | 健康检查和启动信息 | GET /healthz 返回运行状态、版本和时间
+C-02 | worker 注册和心跳 | 记录 node_id、GPU、模型、状态、队列和最后心跳
+C-03 | 能力目录 | 能查询某模型可由哪些健康节点执行
+C-04 | 任务状态机 | queued → running → succeeded/failed/timeout/cancelled
+C-05 | 任务路由 | 只选模型匹配、健康、显存满足且队列较短的 worker
+C-06 | 超时、重试、幂等 | 默认最多重试 1 次；同一幂等键不重复创建任务
+C-07 | 节点摘除和恢复 | 心跳超时标记 offline；worker 恢复后重新注册
+C-08 | 指标 | 至少提供请求数、成功率、p50/p95、队列和在线节点数
+--TABLE 4 rows=8 cols=3
+编号 | 需求 | 验收
+W-01 | GPU 隔离 | 用 CUDA_VISIBLE_DEVICES 或等价机制绑定指定 GPU
+W-02 | 环境和显存检测 | 注册前报告 GPU、驱动/CUDA、显存和模型状态
+W-03 | 模型加载和推理 | 至少支持一个有合法权重的文本/代码模型
+W-04 | 并发控制 | 默认单 worker 单并发；超出限制时排队或返回 busy
+W-05 | 错误处理 | OOM、模型缺失、输入错误、推理异常均返回结构化错误
+W-06 | 心跳和优雅退出 | 支持 ready/busy/draining/offline；停止时不接收新任务
+W-07 | 结构化日志 | 包含 task_id、node_id、模型、耗时和错误码，不记录原始 prompt
+--TABLE 5 rows=9 cols=3
+方法 | 路径 | 用途
+GET | /healthz | coordinator 健康检查
+GET | /v1/nodes | 查看 worker 列表和能力
+POST | /v1/nodes/register | worker 注册
+POST | /v1/nodes/{id}/heartbeat | worker 心跳
+POST | /v1/tasks | 提交推理任务
+GET | /v1/tasks/{id} | 查询任务状态和结果
+POST | /v1/tasks/{id}/cancel | 取消排队任务
+GET | /metrics | 查看 Prometheus 或 JSON 指标
+--TABLE 6 rows=7 cols=2
+验收项 | 通过标准
+多卡启动 | N 张 GPU 对应 N 个 worker；每个 worker 的可见 GPU 正确
+注册与心跳 | 节点表中持续显示 ready 和最新心跳
+任务闭环 | 任务能从 queued 到 running，最终成功或结构化失败
+路由正确 | 不会把任务发给模型不存在或显存不足的 worker
+故障恢复 | kill 一个 worker 后，两个心跳周期内摘除；未完成任务最多重试一次
+现场演示 | 启动、提交、返回、故障、重试和指标查看在 5 分钟内完成
+--TABLE 7 rows=6 cols=3
+阶段 | 内容 | 交付物
+M0 | 确认 BabelMesh 来源/版本/授权、6000D 驱动、模型和演示口径 | 范围确认单、硬件和模型清单
+M1 | 单 worker 加载模型并完成本地推理 | worker、健康检查、GPU 指标
+M2 | 多 worker 注册、心跳、能力目录和路由 | coordinator、启动脚本、demo client
+M3 | 超时、摘除、重试、幂等和故障注入 | 故障脚本、事件日志、测试报告
+M4 | 整理 5 分钟现场演示和性能摘要 | README、demo.sh、指标报告

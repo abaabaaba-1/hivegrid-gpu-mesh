@@ -1,0 +1,12 @@
+2026-10-30 08:27:28 :: strPath: 
+2026-10-30 08:27:28 :: C:\Program Files (x86)\iNode\iNode Client/conf/log/
+2026-10-30 09:14:53 :: strPath: 
+2026-10-30 09:14:53 :: C:\Program Files (x86)\iNode\iNode Client/conf/log/
+2026-10-30 09:14:53 :: strPath: 
+2026-10-30 09:14:53 :: C:\Program Files (x86)\iNode\iNode Client/conf/log/
+2026-10-30 09:18:59 :: strPath: 
+2026-10-30 09:18:59 :: C:\Program Files (x86)\iNode\iNode Client/conf/log/
+2026-10-30 09:19:00 :: strPath: 
+2026-10-30 09:19:00 :: C:\Program Files (x86)\iNode\iNode Client/conf/log/
+2026-10-30 11:10:11 :: strPath: 
+2026-10-30 11:10:11 :: C:\Users\admin\iNodeClient\

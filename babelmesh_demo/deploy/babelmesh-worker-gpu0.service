@@ -1,0 +1,19 @@
+[Unit]
+Description=BabelMesh demo GPU worker 0
+After=babelmesh-coordinator.service babelmesh-vllm-gpu0.service
+Requires=babelmesh-coordinator.service
+Requires=babelmesh-vllm-gpu0.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/babelmesh-demo
+Environment=PYTHONUNBUFFERED=1
+Environment=CUDA_VISIBLE_DEVICES=0
+Environment=BABELMESH_VLLM_URL=http://127.0.0.1:18100/v1
+Environment=BABELMESH_MODEL=Qwen/Qwen2.5-0.5B-Instruct
+ExecStart=/usr/bin/python3 -m babelmesh_demo.worker --coordinator http://127.0.0.1:8000 --worker-id gpu0 --gpu-index 0
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

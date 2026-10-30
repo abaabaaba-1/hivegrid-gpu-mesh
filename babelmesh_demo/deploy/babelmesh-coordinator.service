@@ -1,0 +1,17 @@
+[Unit]
+Description=BabelMesh demo coordinator
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/babelmesh-demo
+Environment=PYTHONUNBUFFERED=1
+Environment=BABELMESH_COORDINATOR_PORT=8000
+Environment=BABELMESH_HEARTBEAT_TIMEOUT=300
+ExecStart=/usr/bin/python3 -m babelmesh_demo.coordinator
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

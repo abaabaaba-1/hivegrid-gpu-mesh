@@ -1,0 +1,17 @@
+[Unit]
+Description=BabelMesh vLLM engine GPU %i
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/babelmesh/vllm-%i.env
+Environment=VLLM_WORKER_MULTIPROC_METHOD=spawn
+Environment=VLLM_USE_FLASHINFER_SAMPLER=0
+ExecStart=/opt/babelmesh-vllm/.venv/bin/vllm serve ${BABELMESH_MODEL_PATH} --host 127.0.0.1 --port ${BABELMESH_VLLM_PORT} --dtype auto --max-model-len 4096 --gpu-memory-utilization 0.75 --enforce-eager --served-model-name ${BABELMESH_SERVED_MODEL}
+Restart=always
+RestartSec=8
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

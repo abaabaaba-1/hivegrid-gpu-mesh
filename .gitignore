@@ -1,0 +1,24 @@
+# Local runtime and generated files
+__pycache__/
+*.py[cod]
+.cache/
+runlogs/
+_prd_render_*/
+
+# Local toolchains and large downloaded archives
+tools/
+*.zip
+*.tgz
+
+# Local credentials and environment overrides
+.env
+.env.*
+*.pem
+*.key
+*.secret
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

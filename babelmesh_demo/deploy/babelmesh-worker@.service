@@ -1,0 +1,24 @@
+[Unit]
+Description=BabelMesh GPU worker %i
+After=network-online.target babelmesh-coordinator.service
+Wants=network-online.target
+Requires=babelmesh-coordinator.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/babelmesh-demo
+Environment=PYTHONUNBUFFERED=1
+Environment=BABELMESH_COORDINATOR=http://127.0.0.1:8000
+Environment=BABELMESH_MODEL=demo
+Environment=BABELMESH_HEARTBEAT_INTERVAL=5
+Environment="BABELMESH_GPU_NAME=NVIDIA RTX 6000D"
+Environment=BABELMESH_MEMORY_MB=85651
+Environment=BABELMESH_CUDA_READY=1
+Environment=BABELMESH_QUERY_GPU_INDEX=0
+Environment=CUDA_VISIBLE_DEVICES=%i
+ExecStart=/usr/bin/python3 -m babelmesh_demo.worker --coordinator http://127.0.0.1:8000 --worker-id gpu%i --gpu-index %i --model demo
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

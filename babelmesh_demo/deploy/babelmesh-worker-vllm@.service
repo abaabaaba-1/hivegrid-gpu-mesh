@@ -1,0 +1,17 @@
+[Unit]
+Description=BabelMesh real model worker %i
+After=network-online.target babelmesh-coordinator.service babelmesh-vllm@%i.service
+Wants=network-online.target
+Requires=babelmesh-coordinator.service babelmesh-vllm@%i.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/babelmesh-demo
+EnvironmentFile=/etc/babelmesh/worker-vllm-%i.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 -m babelmesh_demo.worker --coordinator http://127.0.0.1:8000 --worker-id gpu%i --gpu-index %i --model ${BABELMESH_MODEL}
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

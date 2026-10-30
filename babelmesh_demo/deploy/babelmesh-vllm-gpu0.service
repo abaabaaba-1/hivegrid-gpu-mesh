@@ -1,0 +1,16 @@
+[Unit]
+Description=BabelMesh vLLM engine GPU 0
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/babelmesh-demo
+Environment=CUDA_VISIBLE_DEVICES=0
+Environment=HF_HOME=/opt/babelmesh-models/hf
+ExecStart=/opt/babelmesh-demo/.venv/bin/vllm serve Qwen/Qwen2.5-0.5B-Instruct --host 127.0.0.1 --port 18100 --dtype auto --max-model-len 4096 --gpu-memory-utilization 0.75 --served-model-name Qwen/Qwen2.5-0.5B-Instruct
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
